@@ -1,0 +1,10 @@
+name: blog
+ip: 192.168.0.201
+port: 8080
+type: http
+network_policy: allow-office
+servers:
+- ip: 10.0.5.4
+  port: 80
+- ip: 10.10.0.3
+  port: 80

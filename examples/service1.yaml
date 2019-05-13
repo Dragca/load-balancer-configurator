@@ -1,0 +1,17 @@
+name: admins2_spoluzaci_cz
+ip: 77.66.55.44
+port: 443
+type: https
+certificate_name: wildcard-spoluzaci.cz
+network_policy: allow-all
+servers:
+- ip: 10.0.15.14
+  port: 80
+  weight: 2
+  max_fails: 5
+  fail_timeout: 2
+- ip: 10.1.15.3
+  port: 80
+  weight: 3
+- ip: 10.4.0.13
+  port: 8080
