@@ -18,6 +18,10 @@ class Service:
 
         return json.dumps(result)
 
+    def validate(self):
+        if not self.name:
+            raise ValueError("Missing service name.")
+
 
 class DeletedService(Service):
     def __init__(self, name):
@@ -35,3 +39,18 @@ class ActiveService(Service):
         self.service_type = service_type
         self.network_policy = network_policy
         self.certificate_name = certificate_name
+
+    def validate(self):
+        super().validate()
+        if self.service_type == "https":
+            if self.certificate_name is None or self.certificate_name == "":
+                raise ValueError("Service type 'https' requires certificate name.")
+
+
+if __name__ == "__main__":
+    with open("examples/service1.yaml", 'r') as stream:  # TODO list and run in loop
+        try:
+            service_dict = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+    service = 
