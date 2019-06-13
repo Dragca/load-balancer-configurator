@@ -1,5 +1,8 @@
 import json
 import yaml
+import requests
+
+import to_api
 
 
 class Service:
@@ -54,12 +57,32 @@ class ActiveService(Service):
         self.type = type
         self.network_policy = network_policy
         self.certificate_name = certificate_name
+        self.servers = [Server(**server_dict) for server_dict in servers]  # [..., {ip: 10.1.15.3, port: 80, weight: 3}, ...]
 
+       
     def validate(self):
         super().validate()
         if self.type == "https":
             if self.certificate_name is None or self.certificate_name == "":
                 raise ValueError("Service type 'https' requires certificate name.")
+
+
+class Server:
+    def __init__(self, ip, port, max_fails=3, fail_timeout=3, weight=1):
+        self.ip = ip
+        self.port = port
+        self.max_fails = max_fails
+        self.fail_timeout = fail_timeout
+        self.weight = weight
+
+    def __repr__(self):
+        return "Server({0.ip}:{0.port})".format(self)
+
+    def to_json(self):
+        result = {"ip": self.ip, "port": self.port, "max_fails": self.max_fails, 
+                "fail_timeout": self.fail_timeout, "weight": self.weight, "status": "enabled"}
+        
+        return json.dumps(result)
 
 
 if __name__ == "__main__":
@@ -69,3 +92,4 @@ if __name__ == "__main__":
         except yaml.YAMLError as exc:
             print(exc)
     service = Service.new(service_dict)
+    to_api.to_api(service)
