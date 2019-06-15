@@ -1,6 +1,7 @@
 import json
 import yaml
 import requests
+import os
 
 import to_api
 
@@ -22,7 +23,6 @@ class Service:
             return DeletedService(service_dict["name"])
 
         return ActiveService(**service_dict)
-
 
     def to_json(self):
         if self.deleted:
@@ -59,7 +59,7 @@ class ActiveService(Service):
         self.certificate_name = certificate_name
         self.servers = [Server(**server_dict) for server_dict in servers]  # [..., {ip: 10.1.15.3, port: 80, weight: 3}, ...]
 
-       
+
     def validate(self):
         super().validate()
         if self.type == "https":
@@ -80,16 +80,27 @@ class Server:
 
     def to_json(self):
         result = {"ip": self.ip, "port": self.port, "max_fails": self.max_fails, 
-                "fail_timeout": self.fail_timeout, "weight": self.weight, "status": "enabled"}
-        
+                  "fail_timeout": self.fail_timeout, "weight": self.weight, "status": "enabled"}
+
         return json.dumps(result)
 
 
 if __name__ == "__main__":
-    with open("examples/service1.yaml", 'r') as stream:  # TODO list and run in loop
+    requestor = to_api.ApiRequestor("http://172.18.0.105:8088/v2", auth=('dev', 'dev'))
+ 
+    for file_name in os.listdir("examples"):
+        path = os.path.join("examples", file_name)
+        print(path)  # TODO use logging
+        if not os.path.isfile(path):
+            continue
+        with open(path, 'r') as stream:
+            try:
+                service_dict = yaml.safe_load(stream)
+            except yaml.YAMLError as exc:
+                print(exc)
+                continue
         try:
-            service_dict = yaml.safe_load(stream)
-        except yaml.YAMLError as exc:
+            service = Service.new(service_dict)
+            requestor.sync(service)
+        except Exception as exc:
             print(exc)
-    service = Service.new(service_dict)
-    to_api.to_api(service)
