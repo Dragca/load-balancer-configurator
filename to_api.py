@@ -21,11 +21,12 @@ class ApiRequestor():
             return
 
         if existing_service is None:
-            existing_service = self._create(service)
+            service_id = self._create(service)
         else:
+            service_id = existing_service["id"]
             self._update(existing_service, service)
 
-        self._set_servers(existing_service["id"], service.servers)
+        self._set_servers(service_id, service.servers)
 
     def _check_service_exist(self, service_name):
         response = requests.get(self.url + "/services", auth=self.auth)
@@ -42,14 +43,15 @@ class ApiRequestor():
         if response.status_code != 204:
             raise Exception("Service cannot be deleted, status:{}".format(response.status_code))
 
-        print("Service deleted: {0.name}".format(service))
+        print("Service deleted: {}".format(service_id))
 
     def _create(self, service):
         """
         Creates service
         @returns service ID
         """
-        response = requests.post(self.url + "/services", auth=self.auth, data=service.to_json())
+        response = requests.post(self.url + "/services", auth=self.auth,
+                                 data=service.to_json(), allow_redirects=False)
         if response.status_code != 302:
             raise Exception("Service cannot be created, status:{}".format(response.status_code))
 
