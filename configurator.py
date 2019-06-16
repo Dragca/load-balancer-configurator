@@ -7,7 +7,7 @@ from service import Service
 
 
 if __name__ == "__main__":
-    requestor = to_api.ApiRequestor("http://pyladies-api.kvadr.eu/v2/", auth=('dev', 'dev'))
+    requestor = to_api.ApiRequestor("http://pyladies-api.kvadr.eu/v2", auth=('dev', 'dev'))
 
     for file_name in os.listdir("examples"):
         path = os.path.join("examples", file_name)
