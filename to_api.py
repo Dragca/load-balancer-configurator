@@ -58,7 +58,7 @@ class ApiRequestor():
         return int(response.headers["Location"].rsplit("/", 1)[1])
 
     def _update(self, existing_service, service):
-        if self._services_equal(existing_service, service):
+        if service.is_equal(existing_service):
             return
 
         response = requests.put(self.url + "/services/" + str(existing_service["id"]), auth=self.auth, data=service.to_json())
@@ -66,12 +66,6 @@ class ApiRequestor():
             raise Exception("Service cannot be updated, status:{}".format(response.status_code))
 
         print("Service updated: {0.name}".format(service))
-
-    def _services_equal(self, existing_service, service):
-        for key in ("ip", "port", "type", "certificate_name", "network_policy"):
-            if existing_service[key] != getattr(service, key):
-                return False
-        return True
 
     def _set_servers(self, service_id, servers):
         response = requests.get(self.url + "/services/" + str(service_id) + "/servers", auth=self.auth)
@@ -82,7 +76,7 @@ class ApiRequestor():
         for server in servers:
             found = False
             for existing in existing_servers:
-                if self._servers_equal(server, existing):
+                if server.is_equal(existing):
                     existing_servers.remove(existing)
                     found = True
                     break
@@ -105,11 +99,3 @@ class ApiRequestor():
         if response.status_code != 204:
             raise Exception("Server cannot be deleted, status:{}".format(response.status_code))
         print("Server deleted: {}".format(server_id))
-
-    def _servers_equal(self, server, existing):
-        for key in ("ip", "port", "weight", "fail_timeout", "max_fails"):
-            if existing[key] != getattr(server, key):
-                return False
-        if existing["status"] != "ENABLED":
-            return False
-        return True

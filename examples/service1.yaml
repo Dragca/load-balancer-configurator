@@ -5,7 +5,7 @@ type: https
 certificate_name: wildcard-spoluzaci.cz
 network_policy: allow-all
 servers:
-- ip: 10.0.15.147
+- ip: 10.0.15.14
   port: 80
   weight: 2
   max_fails: 5
