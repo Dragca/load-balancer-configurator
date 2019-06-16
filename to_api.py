@@ -14,13 +14,6 @@ class ApiRequestor():
         Checks that service is up to date in API.
         If is needed calls create, update or delete.
         """
-        # zjistit jeslti je v API,
-        # pokud není, vytvoriit
-        # porovnat existujci službu
-        # provest update
-        # pripadne smazat
-        # přečíst, porovnat případně smazat beckends - servery
-
         existing_service = self._check_service_exist(service.name)
         if service.deleted:
             if existing_service is not None:
@@ -32,7 +25,7 @@ class ApiRequestor():
         else:
             self._update(existing_service, service)
 
-        # TODO servers
+        self._set_servers(existing_service["id"], service.servers)
 
     def _check_service_exist(self, service_name):
         response = requests.get(self.url + "/services", auth=self.auth)
@@ -46,8 +39,10 @@ class ApiRequestor():
 
     def _delete(self, service_id):
         response = requests.delete(self.url + "/services/" + str(service_id), auth=self.auth)
-        if response.status_code != 200:
+        if response.status_code != 204:
             raise Exception("Service cannot be deleted, status:{}".format(response.status_code))
+
+        print("Service deleted: {0.name}".format(service))
 
     def _create(self, service):
         """
@@ -57,6 +52,9 @@ class ApiRequestor():
         response = requests.post(self.url + "/services", auth=self.auth, data=service.to_json())
         if response.status_code != 302:
             raise Exception("Service cannot be created, status:{}".format(response.status_code))
+
+        print("Service created: {0.name}".format(service))
+
         return int(response.headers["Location"].rsplit("/", 1)[1])
 
     def _update(self, existing_service, service):
@@ -67,8 +65,51 @@ class ApiRequestor():
         if response.status_code != 200:
             raise Exception("Service cannot be updated, status:{}".format(response.status_code))
 
+        print("Service updated: {0.name}".format(service))
+
     def _services_equal(self, existing_service, service):
         for key in ("ip", "port", "type", "certificate_name", "network_policy"):
             if existing_service[key] != getattr(service, key):
                 return False
+        return True
+
+    def _set_servers(self, service_id, servers):
+        response = requests.get(self.url + "/services/" + str(service_id) + "/servers", auth=self.auth)
+        if response.status_code != 200:
+            raise Exception("Servers cannot be fetched, status:{}".format(response.status_code))
+        existing_servers = response.json()
+
+        for server in servers:
+            found = False
+            for existing in existing_servers:
+                if self._servers_equal(server, existing):
+                    existing_servers.remove(existing)
+                    found = True
+                    break
+            if found:
+                continue
+            self._create_server(service_id, server)
+
+        for existing in existing_servers:
+            self._delete_server(existing["id"])
+
+    def _create_server(self, service_id, server):
+        response = requests.post(self.url + "/services/" + str(service_id) + "/servers", auth=self.auth,
+                                 data=server.to_json(), allow_redirects=False)
+        if response.status_code != 302:
+            raise Exception("Server cannot be created, status:{}".format(response.status_code))
+        print("Server created: {0.ip}:{0.port}".format(server))
+
+    def _delete_server(self, server_id):
+        response = requests.delete(self.url + "/servers/" + str(server_id), auth=self.auth)
+        if response.status_code != 204:
+            raise Exception("Server cannot be deleted, status:{}".format(response.status_code))
+        print("Server deleted: {}".format(server_id))
+
+    def _servers_equal(self, server, existing):
+        for key in ("ip", "port", "weight", "fail_timeout", "max_fails"):
+            if existing[key] != getattr(server, key):
+                return False
+        if existing["status"] != "ENABLED":
+            return False
         return True

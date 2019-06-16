@@ -28,13 +28,15 @@ class Service:
         if self.deleted:
             return json.dumps({'name': self.name})
 
-        result = {"name": self.name, "ip": self.ip, "port": self.port,
+        data = {"name": self.name, "ip": self.ip, "port": self.port,
                   "type": self.type, "network_policy": self.network_policy}
 
         if self.certificate_name is not None:
-            result["certificate_name"] = self.certificate_name
+            data["certificate_name"] = self.certificate_name
 
-        return json.dumps(result)
+        return json.dumps({
+            "data": data
+        })
 
     def validate(self):
         if not self.name:
@@ -59,7 +61,6 @@ class ActiveService(Service):
         self.certificate_name = certificate_name
         self.servers = [Server(**server_dict) for server_dict in servers]  # [..., {ip: 10.1.15.3, port: 80, weight: 3}, ...]
 
-
     def validate(self):
         super().validate()
         if self.type == "https":
@@ -79,15 +80,16 @@ class Server:
         return "Server({0.ip}:{0.port})".format(self)
 
     def to_json(self):
-        result = {"ip": self.ip, "port": self.port, "max_fails": self.max_fails, 
-                  "fail_timeout": self.fail_timeout, "weight": self.weight, "status": "enabled"}
+        data = {"ip": self.ip, "port": self.port, "max_fails": self.max_fails, 
+                  "fail_timeout": self.fail_timeout, "weight": self.weight, "status": "ENABLED"}
 
-        return json.dumps(result)
-
+        return json.dumps({
+            "data": data
+        })
 
 if __name__ == "__main__":
     requestor = to_api.ApiRequestor("http://172.18.0.105:8088/v2", auth=('dev', 'dev'))
- 
+
     for file_name in os.listdir("examples"):
         path = os.path.join("examples", file_name)
         print(path)  # TODO use logging
