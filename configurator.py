@@ -22,6 +22,7 @@ if __name__ == "__main__":
                 continue
         try:
             service = Service.new(service_dict)
+            service.validate()
             requestor.sync(service)
         except Exception as exc:
             print(exc)
